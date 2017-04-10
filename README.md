@@ -4,7 +4,8 @@ A pair of servers (local and remote) for a couple of things in my Google Home se
 
 Installation
 ============
-1. Edit private_config.js to include Youtube API key and remote server information
-2. Run `npm install`.
-3. Run `node server_remote.js` on remote server
-4. Run `node server_local.js` on local network
+1. Download youtube-dl ([https://rg3.github.io/youtube-dl/]) on the remote server.
+2. Edit config.js (see config.js.sample) to include Youtube API key, remote server information, and youtube-dl directory
+3. Run `npm install`.
+4. Run `node server_remote.js` on remote server.
+5. Run `node server_local.js` on local network.
