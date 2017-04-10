@@ -18,7 +18,7 @@ browser.on('serviceUp', function(service) {
       console.log('received: ', data);
       client.launch(DefaultMediaReceiver, function(err, player) {
         var media = {
-					contentId: 'http://' + CONFIG.REMOTE_SERVER + ":" + PORT + "/audio',
+					contentId: 'http://' + CONFIG.REMOTE_SERVER + ':' + PORT + '/audio',
           contentType: 'audio/ogg',
           streamType: 'BUFFERED', // or LIVE
         };
