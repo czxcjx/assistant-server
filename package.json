@@ -1,0 +1,17 @@
+{
+  "name": "assistant-server",
+  "version": "1.0.0",
+  "description": "Server for messing with Google Home",
+  "main": "index_remote.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Zhan Xiong Chin",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.15.2",
+    "fs": "0.0.1-security",
+    "googleapis": "^18.0.0",
+    "ws": "^2.2.3"
+  }
+}
