@@ -7,5 +7,5 @@ Installation
 1. Download youtube-dl ([https://rg3.github.io/youtube-dl/]) on the remote server.
 2. Edit config.js (see config.js.sample) to include Youtube API key, remote server information, and youtube-dl directory
 3. Run `npm install`.
-4. Run `node server_remote.js` on remote server.
-5. Run `node server_local.js` on local network.
+4. Run `node index_remote.js` on remote server.
+5. Run `node index_local.js` on local network.
