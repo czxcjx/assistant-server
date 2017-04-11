@@ -42,7 +42,13 @@ app.get('/find_song', function(req, res) {
       var id = res.items[0].id.videoId;
       console.log('ID:', id);
 
-      fs.unlinkSync('./audio.opus');
+      try {
+        fs.unlinkSync('./audio.opus');
+      } catch (fs_err) {
+        if (fs_err.code !== 'ENOENT') {
+          throw fs_err;
+        }
+      }
 
       execFile(
         '/usr/bin/python',
