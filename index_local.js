@@ -34,10 +34,7 @@ browser.on('serviceUp', function(service) {
 
         // Handle autoplay
         player.on('status', function(status) {
-          console.dir(status);
-          console.log(status.playerState, status.idleReason);
           if (status.playerState === 'IDLE' && status.idleReason === 'FINISHED') {
-            console.log('song ended');
             socket.send('SONG_ENDED');
           }
         });
