@@ -4,10 +4,15 @@ var mdns = require('mdns');
 var ws = require('ws');
 
 var CONFIG = require('./config.js');
-var REMOTE_SERVER = CONFIG.REMOTE_SERVER;
 
-var browser = mdns.createBrowser(mdns.tcp('googlecast'));
-var socket = new ws('ws://' + REMOTE_SERVER + ':' + WS_PORT);
+// Fix from https://github.com/agnat/node_mdns/issues/130#issuecomment-120731155
+var resolverSequence = [
+  mdns.rst.DNSServiceResolve(),
+  'DNSServiceGetAddrInfo' in mdns.dns_sd ? mdns.rst.DNSServiceGetAddrInfo() : mdns.rst.getaddrinfo({families: [4]}),
+  mdns.rst.makeAddressesUnique(),
+];
+var browser = mdns.createBrowser(mdns.tcp('googlecast'), { resolverSequence: resolverSequence });
+var socket = new ws('ws://' + CONFIG.REMOTE_SERVER + ':' + CONFIG.WS_PORT);
 
 browser.on('serviceUp', function(service) {
   console.log('found device %s at %s:%d', service.name, service.addresses[0], service.port);
@@ -18,7 +23,7 @@ browser.on('serviceUp', function(service) {
       console.log('received: ', data);
       client.launch(DefaultMediaReceiver, function(err, player) {
         var media = {
-          contentId: 'http://' + CONFIG.REMOTE_SERVER + ':' + PORT + '/audio',
+          contentId: 'http://' + CONFIG.REMOTE_SERVER + ':' + CONFIG.PORT + '/audio',
           contentType: 'audio/ogg',
           streamType: 'BUFFERED', // or LIVE
         };
@@ -36,4 +41,12 @@ browser.on('serviceUp', function(service) {
   });
 });
 
-browser.start();
+browser.on('error', function(err) {
+  console.log('browser error: %s', err);
+});
+
+try {
+  browser.start();
+} catch (err) {
+  console.log('caught: %s', err);
+}
