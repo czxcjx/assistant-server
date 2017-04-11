@@ -67,6 +67,6 @@ app.get('/find_song', function(req, res) {
   );
 });
 
-app.listen(CONFIG.PORT, 'localhost', function() {
+app.listen(CONFIG.PORT, function() {
   console.log('Listening on port %d', CONFIG.PORT);
 });
