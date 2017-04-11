@@ -10,7 +10,7 @@ var app = express();
 var youtube = googleapis.youtube({ version: 'v3', auth: CONFIG.API_KEY });
 var websocketServer = new ws.Server({ port: CONFIG.WS_PORT });
 
-var playNextSong = true;
+var autoplayNextSong = true;
 var lastId = '';
 
 app.get('/', function(req, res) {
@@ -90,9 +90,16 @@ app.get('/find_song', function(req, res) {
 });
 
 // Handle autoplay
+app.get('/autoplay', function(req, res) {
+  if (req.query && req.query.val) {
+    console.log('Setting autoplay to %s', req.query.val);
+  }
+  res.send('OK');
+  autoplayNextSong = (req.query.val === 'true') ? true : false;
+});
 websocketServer.on('connection', function(socket) {
   socket.on('message', function(msg) {
-    if (msg === 'SONG_ENDED') {
+    if (msg === 'SONG_ENDED' && autoplayNextSong) {
       var ytRequest = youtube.search.list(
         {
           relatedToVideoId: lastId,
