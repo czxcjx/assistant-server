@@ -10,7 +10,13 @@ var app = express();
 var youtube = googleapis.youtube({ version: 'v3', auth: CONFIG.API_KEY });
 var websocketServer = new ws.Server({ port: CONFIG.WS_PORT });
 
+// Do we automatically load a new song when the current one ends?
 var autoplayNextSong = true;
+// Set of songs played in this autoplay set
+var autoplayedSongs = {};
+// Number of songs to request on autoplay list (to find new song)
+var MAX_AUTOPLAY_RESULTS = 10;
+// Last played song id
 var lastId = '';
 
 app.get('/', function(req, res) {
@@ -54,6 +60,7 @@ function loadYoutubeVideo(id) {
     ],
     function(err, stdout, stderr) {
       lastId = id;
+      autoplayedSongs[id] = true;
       websocketServer.clients.forEach(function(client) {
         if (client.readyState === ws.OPEN) {
           client.send('UPDATE');
@@ -84,6 +91,7 @@ app.get('/find_song', function(req, res) {
       var id = res.items[0].id.videoId;
       console.log('ID:', id);
 
+      autoplayedSongs = {};
       loadYoutubeVideo(id);
     }
   );
@@ -105,14 +113,23 @@ websocketServer.on('connection', function(socket) {
           relatedToVideoId: lastId,
           part: 'snippet',
           type: 'video',
-          maxResults: 1,
+          maxResults: MAX_AUTOPLAY_RESULTS,
         }, 
         function (err, res) {
           if (err) {
             console.log('ERROR: ', err);
             return;
           }
-          var id = res.items[0].id.videoId;
+          var id = '';
+          for (var i = 0; i < MAX_AUTOPLAY_RESULTS; i++) {
+            if (autoplayedSongs[res.items[i].id.videoId] === undefined) {
+              id = res.items[i].id.videoId;
+              break;
+            }
+          }
+          if (id === '') {
+            id = res.items[0].id.videoId;
+          }
           console.log('AUTO_ID:', id);
 
           loadYoutubeVideo(id);
