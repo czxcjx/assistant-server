@@ -10,6 +10,9 @@ var app = express();
 var youtube = googleapis.youtube({ version: 'v3', auth: CONFIG.API_KEY });
 var websocketServer = new ws.Server({ port: CONFIG.WS_PORT });
 
+var playNextSong = true;
+var lastId = '';
+
 app.get('/', function(req, res) {
   res.send('Hello world!');
 });
@@ -17,9 +20,48 @@ app.get('/', function(req, res) {
 // Get downloaded audio
 app.get('/audio', function(req, res) {
   res.set({'Content-Type': 'audio/ogg'});
-  var readStream = fs.createReadStream('./audio.opus');
-  readStream.pipe(res);
+  try {
+    var readStream = fs.createReadStream('./audio.opus');
+    readStream.pipe(res);
+  } catch (fs_err) {
+    if (fs_err.code !== 'ENOENT') {
+      throw fs_err;
+    } else {
+      res.end();
+    }
+  }
 });
+
+function loadYoutubeVideo(id) {
+  try {
+    fs.unlinkSync('./audio.opus');
+  } catch (fs_err) {
+    if (fs_err.code !== 'ENOENT') {
+      throw fs_err;
+    }
+  }
+
+  execFile(
+    '/usr/bin/python',
+    [
+      CONFIG.YOUTUBE_DL_DIR + '/youtube-dl',
+      'https://youtube.com/watch?v=' + id,
+      '-x',
+      '-o',
+      './audio.opus',
+      '--audio-format',
+      'opus',
+    ],
+    function(err, stdout, stderr) {
+      lastId = id;
+      websocketServer.clients.forEach(function(client) {
+        if (client.readyState === ws.OPEN) {
+          client.send('UPDATE');
+        }
+      });
+    }
+  );
+}
 
 // Find new audio and download it
 app.get('/find_song', function(req, res) {
@@ -42,42 +84,34 @@ app.get('/find_song', function(req, res) {
       var id = res.items[0].id.videoId;
       console.log('ID:', id);
 
-      try {
-        fs.unlinkSync('./audio.opus');
-      } catch (fs_err) {
-        if (fs_err.code !== 'ENOENT') {
-          throw fs_err;
-        }
-      }
-
-      execFile(
-        '/usr/bin/python',
-        [
-          CONFIG.YOUTUBE_DL_DIR + '/youtube-dl',
-          'https://youtube.com/watch?v=' + id,
-          '-x',
-          '-o',
-          './audio.opus',
-          '--audio-format',
-          'opus',
-        ],
-        function(err, stdout, stderr) {
-          websocketServer.clients.forEach(function(client) {
-            if (client.readyState === ws.OPEN) {
-              client.send('UPDATE');
-            }
-          });
-        }
-      );
+      loadYoutubeVideo(id);
     }
   );
 });
 
+// Handle autoplay
 websocketServer.on('connection', function(socket) {
   socket.on('message', function(msg) {
-    console.log('received msg "%s"', msg);
     if (msg === 'SONG_ENDED') {
-      socket.send('UPDATE');
+      var ytRequest = youtube.search.list(
+        {
+          relatedToVideoId: lastId,
+          part: 'snippet',
+          type: 'video',
+          maxResults: 1,
+        }, 
+        function (err, res) {
+          if (err) {
+            console.log('ERROR: ', err);
+            return;
+          }
+          var id = res.items[0].id.videoId;
+          console.log('AUTO_ID:', id);
+
+          loadYoutubeVideo(id);
+        }
+      );
+
     }
   });
 });
