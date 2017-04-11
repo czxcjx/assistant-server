@@ -73,6 +73,15 @@ app.get('/find_song', function(req, res) {
   );
 });
 
+websocketServer.on('connection', function(socket) {
+  socket.on('message', function(msg) {
+    console.log('received msg "%s"', msg);
+    if (msg === 'SONG_ENDED') {
+      socket.send('UPDATE');
+    }
+  });
+});
+
 app.listen(CONFIG.PORT, function() {
   console.log('Listening on port %d', CONFIG.PORT);
 });
